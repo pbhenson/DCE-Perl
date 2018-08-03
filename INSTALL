@@ -29,12 +29,6 @@ The test suite is not complete, nor is the documentation, however,
 if you are familiar with the DCE security APIs and/or have your
 reference manuals close by, the *.t files will serve as decent examples.
 
-For comments, questions, bug-reports, announcements, etc. subscribe to
-the DCE-Perl mailing list <dce-perl@lists.csupomona.edu> by sending mail to:
-majordomo@lists.csupomona.edu
-with a body consisting of:
-"subscribe dce-perl"
-
 When sending a bug report, please including the following information:
 
 output of any make errors
