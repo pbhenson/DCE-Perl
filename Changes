@@ -1,3 +1,8 @@
+=item 0.17 - 05/11/98
+
+Minor fixes to ACL.xs involving foreign ACL types. Thanks to Reggie Hunt
+<rhunt@hunt.llnl.gov> for contributing the fix.
+
 
 =item 0.16 - 03/10/98
 

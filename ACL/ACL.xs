@@ -716,11 +716,14 @@ DCE::ACL::entry e
     hv_store(hv, "entry_type", 10,
 	     newSViv((IV)e->entry_info.entry_type), 0);
 
-    STORE_SEC_ID(e->entry_info.tagged_union.id, hv, "id", 2);
-    if(IS_FOREIGN_TYPE(e->entry_info.entry_type)) 
-	STORE_FOREIGN_ID(e->entry_info.tagged_union.foreign_id, hv);
+    if (IS_FOREIGN_TYPE(e->entry_info.entry_type)) {
+      STORE_FOREIGN_ID(e->entry_info.tagged_union.foreign_id, hv);
+    }
+    else {
+      STORE_SEC_ID(e->entry_info.tagged_union.id, hv, "id", 2);
+    }
 
-    if(items > 1) {
+    if (items > 1) {
 	HV *set_hv, *f_hv;
 	SV **svp;
 	set_hv = (HV*)SvRV(ST(1));
@@ -729,9 +732,13 @@ DCE::ACL::entry e
 	if(SvOK(*svp)) 
 	    e->entry_info.entry_type = (sec_acl_entry_type_t)SvIV(*svp);
 
-	FETCH_SEC_ID(e->entry_info.tagged_union.id, set_hv, "id", 2);
-	if(IS_FOREIGN_TYPE(e->entry_info.entry_type)) 
-	    FETCH_FOREIGN_ID(e->entry_info.tagged_union.foreign_id, set_hv);
+	if (IS_FOREIGN_TYPE(e->entry_info.entry_type))  {
+	  FETCH_FOREIGN_ID(e->entry_info.tagged_union.foreign_id, set_hv);
+        }
+        else {
+	  FETCH_SEC_ID(e->entry_info.tagged_union.id, set_hv, "id", 2);
+        }
+
     }
     RETVAL = newRV((SV*)hv);
     }

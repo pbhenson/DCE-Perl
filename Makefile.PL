@@ -37,7 +37,7 @@ WriteMakefile (
   TYPEMAPS => [$typemap],
   XSPROTOARG	=> '-noprototypes',
   NAME => 'DCE-Perl',
-  VERSION => '0.16',
+  VERSION => '0.17',
   'dist'    => {
       COMPRESS=> 'gzip -9f', SUFFIX=>'gz', 
       POSTOP => 'mv $(DISTNAME)-$(VERSION).tar.gz ../',
