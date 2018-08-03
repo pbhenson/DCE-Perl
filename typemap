@@ -1,5 +1,6 @@
 perlrpcsub		T_PV
 DCE::Registry		T_PTROBJ
+DCE::Registry::era	T_PTROBJ
 DCE::cursor		T_PTROBJ
 DCE::RegistryCursor	T_PTROBJ
 DCE::Login		T_PTROBJ

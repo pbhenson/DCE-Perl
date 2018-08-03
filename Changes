@@ -1,3 +1,21 @@
+=item 0.19 - 06/28/99
+
+fixed minor bugs where the return value of a function would be accessed
+before the status of the function was checked, which occasionally caused
+core dumps :(.
+
+
+added new module DCE::rpcbase for access to RPC constants.
+
+
+added new module DCE::attrbase for access to extended registry attribute
+constants.
+
+
+added some limited support for extended registry attributes to
+DCE::Registry.
+
+
 =item 0.17 - 05/11/98
 
 Minor fixes to ACL.xs involving foreign ACL types. Thanks to Reggie Hunt
@@ -97,17 +115,3 @@ is passed, when called in a scalar context, only the first acl is returned
 
 $acl->entries now returns a list of all entries if no index argument 
 is passed
-
-Started maintaining a Changes file
-
-=item 0.12
-
-no log
-
-=item 0.11
-
-no log
-
-=item 0.10
-
-no log

@@ -1,18 +1,5 @@
 =pod
 
-According to Paul B. Henson <henson@acm.org>:
-
-The correct configuration for Solaris is to compile DCE-perl with *only*
--ldce, and then recompile perl itself including at least the following
-libraries:
-
--ldce -lsocket -lnsl -lthread -lm
-
-
-FYI, for Digital Unix 4.0, you only need '-ldce'.
-
-For Digital Unix 3.2, you need '-ldce -lpthreads -lmach -lc_r'.
-
 =cut
 
 use Config; 
@@ -22,8 +9,10 @@ my $def_dce_libs = '-L/usr/include/dce -ldce';
 
 my $mm_dce = {
     hpux => {LIBS => [$def_dce_libs, "-lc_r"]},
-    solaris => {LIBS => [qw(-ldce)],
-		DEFINE => '-I/usr/include/dce -D_REENTRANT'}
+#    solaris => {LIBS => [qw(-ldce)],
+#		DEFINE => '-I/usr/include/dce -D_REENTRANT'}
+    solaris => {LIBS => [qw(-ldce -lthread -lsocket -lnsl -lm)],
+		DEFINE => ''}
 };
   
 # Provide a default LIBS for other systems.
@@ -37,7 +26,7 @@ WriteMakefile (
   TYPEMAPS => [$typemap],
   XSPROTOARG	=> '-noprototypes',
   NAME => 'DCE-Perl',
-  VERSION => '0.18',
+  VERSION => '0.19',
   'dist'    => {
       COMPRESS=> 'gzip -9f', SUFFIX=>'gz', 
       POSTOP => 'mv $(DISTNAME)-$(VERSION).tar.gz ../',

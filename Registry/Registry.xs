@@ -1,4 +1,13 @@
 #include "../DCE_Perl.h"
+#include <dce/sec_rgy_attr.h>
+
+typedef struct {
+  sec_attr_t attr;
+  sec_rgy_name_t name;
+  int initialized;
+} era_obj_t;
+
+typedef era_obj_t *DCE__Registry__era;
 
 /* $Id: Registry.xs,v 1.15 1997/06/23 03:45:20 dougm Exp $ */
 
@@ -644,11 +653,17 @@ sec_rgy_pgo_get_next(rgy_context, domain, scope, item_cursor)
 
     sec_rgy_pgo_get_next(rgy_context, domain, scope, item_cursor, &pgo_item, pgo_name, &status);
 
-    STORE_PGO_ITEM;
-
     EXTEND(sp, 2);
-    PUSHs((SV*)rv);
-    PUSHs_pv(pgo_name); 
+
+    if (!status) {
+      STORE_PGO_ITEM;
+      PUSHs((SV*)rv);
+      PUSHs_pv(pgo_name);
+    }
+    else {
+      PUSHs_iv(0);
+      PUSHs_iv(0);
+    }
     DCESTATUS;
   }
 
@@ -692,9 +707,13 @@ sec_rgy_pgo_get_by_name(rgy_context, domain, name, item_cursor)
 
     sec_rgy_pgo_get_by_name(rgy_context, domain, name, (sec_rgy_cursor_t *)item_cursor, &pgo_item, &status);
 
-    STORE_PGO_ITEM;
+    if (!status) {
+      STORE_PGO_ITEM;
+      XPUSHs((SV*)rv);
+    }
+    else
+      XPUSHs_iv(0);
 
-    XPUSHs((SV*)rv);
     DCESTATUS;
   }
 
@@ -720,10 +739,15 @@ sec_rgy_pgo_get_by_unix_num(rgy_context, domain, scope, unix_id, allow_aliases, 
 				allow_aliases, (sec_rgy_cursor_t *)cursor, 
 				&pgo_item, name, &status);
 
-    STORE_PGO_ITEM;
-
-    XPUSHs((SV*)rv);
-    XPUSHs_pv(name);
+    if (!status) {
+      STORE_PGO_ITEM;
+      XPUSHs((SV*)rv);
+      XPUSHs_pv(name);
+    }
+    else {
+      XPUSHs_iv(0);
+      XPUSHs_iv(0);
+    }
     DCESTATUS;
   }
 
@@ -750,10 +774,15 @@ sec_rgy_pgo_get_by_id(rgy_context, domain, scope, id, allow_aliases, cursor)
 			   allow_aliases, (sec_rgy_cursor_t *)cursor, 
 			   &pgo_item, name, &status);
 
-    STORE_PGO_ITEM;
-
-    XPUSHs((SV*)rv);
-    XPUSHs_pv(name);
+    if (!status) {
+      STORE_PGO_ITEM;
+      XPUSHs((SV*)rv);
+      XPUSHs_pv(name);
+    }
+    else {
+      XPUSHs_iv(0);
+      XPUSHs_iv(0);
+    }
     DCESTATUS;
   }
 
@@ -1238,6 +1267,44 @@ sec_rgy_plcy_get_effective(rgy_context, organization)
     STORE_POLICY_DATA;
   }
 
+MODULE = DCE::Registry  PACKAGE = DCE::Registry
+
+void
+era(rgy_context, era_name)
+  DCE::Registry rgy_context
+  char *era_name
+
+  PPCODE:
+     {
+       SV *sv = &sv_undef;
+       DCE__Registry__era era;
+       sec_attr_schema_entry_t era_schema;
+       error_status_t status;
+
+       era = (DCE__Registry__era)malloc(sizeof(era_obj_t));
+       if (!era)
+	 status = sec_s_no_memory;
+       else
+         {
+	   sec_rgy_attr_sch_lookup_by_name(rgy_context, "", era_name, &era_schema, &status);
+	   if (!status)
+	     {
+	       era->attr.attr_id = era_schema.attr_id;
+	       era->attr.attr_value.attr_encoding = era_schema.attr_encoding;
+	       strncpy(era->name, era_name, sec_rgy_name_max_len);
+	       era->name[sec_rgy_name_max_len] = '\0';
+	       era->initialized = 0;
+	       sv = sv_newmortal();
+	       sv_setref_pv(sv, "DCE::Registry::era", (void *)era);
+	     }
+	 }
+       
+       XPUSHs(sv);
+       sv = sv_2mortal(newSViv(status));
+       XPUSHs(sv);
+     }
+
+
 
 MODULE = DCE::Registry  PACKAGE = DCE::cursor
 
@@ -1290,6 +1357,430 @@ new(package)
     XPUSHs(cursor);
   }
 
+MODULE = DCE::Registry          PACKAGE = DCE::Registry::era
+
+void
+DESTROY(era)
+DCE::Registry::era era
+
+  CODE:
+  {
+  }
+
+void
+name(era)
+DCE::Registry::era era
+
+  PPCODE:
+  {
+    XPUSHs(newSVpv(era->name, 0));
+  }
+
+int
+type(era)
+DCE::Registry::era era
+
+  CODE:
+  {
+    RETVAL = era->attr.attr_value.attr_encoding;
+  }
+
+  OUTPUT:
+  RETVAL
+
+int
+set_type(era, type)
+DCE::Registry::era era
+int type
+
+  CODE:
+  {
+    error_status_t status;
+    
+    if (era->attr.attr_value.attr_encoding == sec_attr_enc_any)
+      {
+	switch (type)
+	  {
+	  case sec_attr_enc_any:
+	  case sec_attr_enc_void:
+	  case sec_attr_enc_integer:
+	  case sec_attr_enc_printstring:
+	  case sec_attr_enc_printstring_array:
+	  case sec_attr_enc_bytes:
+	  case sec_attr_enc_confidential_bytes:
+	  case sec_attr_enc_i18n_data:
+	  case sec_attr_enc_uuid:
+	  case sec_attr_enc_attr_set:
+	  case sec_attr_enc_binding:
+	  case sec_attr_enc_trig_binding:
+	    era->attr.attr_value.attr_encoding = type;
+	    status = 0;
+	    break;
+	  default:
+	   status = sec_attr_bad_type;
+	  }
+      }
+    else
+      status = sec_attr_field_no_update;
+
+    RETVAL = status;
+  }
+  OUTPUT:
+  RETVAL
+
+void
+value(era)
+DCE::Registry::era era
+
+  PPCODE:
+  {
+    HV *hv = newHV();
+    error_status_t status = 0;
+
+    
+    if (!era->initialized)
+      status = sec_attr_bad_param;
+    else
+      switch (era->attr.attr_value.attr_encoding)
+	{
+	case sec_attr_enc_any:
+	  status = sec_attr_bad_param;
+	  break;
+
+	case sec_attr_enc_void:
+	  break;
+
+	case sec_attr_enc_integer:
+	  hv_store(hv, "integer", 7, newSViv(era->attr.attr_value.tagged_union.signed_int), 0);
+	  break;
+
+	case sec_attr_enc_printstring:
+	  hv_store(hv, "printstring", 11, newSVpv(era->attr.attr_value.tagged_union.printstring, 0), 0);
+	  break;
+
+	case sec_attr_enc_printstring_array:
+	  status = sec_attr_not_implemented;
+	  break;
+
+	case sec_attr_enc_bytes:
+	case sec_attr_enc_confidential_bytes:
+	  hv_store(hv, "bytes", 5, newSVpv(era->attr.attr_value.tagged_union.bytes->data, era->attr.attr_value.tagged_union.bytes->length), 0);
+	  break;
+
+	case sec_attr_enc_i18n_data:
+	  hv_store(hv, "codeset", 7, newSViv(era->attr.attr_value.tagged_union.idata->codeset), 0);
+	  hv_store(hv, "data", 4, newSVpv(era->attr.attr_value.tagged_union.idata->data, era->attr.attr_value.tagged_union.idata->length), 0);
+	  break;
+
+	case sec_attr_enc_uuid:
+	  status = sec_attr_not_implemented;
+	  break;
+
+	case sec_attr_enc_attr_set:
+	  status = sec_attr_not_implemented;
+	  break;
+
+	case sec_attr_enc_binding:
+	  {
+	    HV *auth_info = newHV();
+	    HV *binding = newHV();
+
+	    hv_store(auth_info, "info_type", 9, newSViv(era->attr.attr_value.tagged_union.binding->auth_info.info_type), 0);
+	    if (era->attr.attr_value.tagged_union.binding->auth_info.info_type == sec_attr_bind_auth_dce)
+	      {
+		hv_store(auth_info, "svr_princ_name", 14, newSVpv(era->attr.attr_value.tagged_union.binding->auth_info.tagged_union.dce_info.svr_princ_name, 0), 0);
+		hv_store(auth_info, "protect_level", 13, newSViv(era->attr.attr_value.tagged_union.binding->auth_info.tagged_union.dce_info.protect_level), 0);
+		hv_store(auth_info, "authn_svc", 9, newSViv(era->attr.attr_value.tagged_union.binding->auth_info.tagged_union.dce_info.authn_svc), 0);
+		hv_store(auth_info, "authz_svc", 9, newSViv(era->attr.attr_value.tagged_union.binding->auth_info.tagged_union.dce_info.authz_svc), 0);
+	      }
+	    hv_store(binding, "bind_type", 9, newSViv(era->attr.attr_value.tagged_union.binding->bindings[0].bind_type), 0);
+	    switch (era->attr.attr_value.tagged_union.binding->bindings[0].bind_type)
+	      {
+	      case sec_attr_bind_type_string:
+		hv_store(binding, "string_binding", 14, newSVpv(era->attr.attr_value.tagged_union.binding->bindings[0].tagged_union.string_binding, 0), 0);
+		break;
+
+	      case sec_attr_bind_type_twrs:
+		status = sec_attr_not_implemented;
+		break;
+
+	      case sec_attr_bind_type_svrname:
+		hv_store(binding, "svrname", 7, newSVpv(era->attr.attr_value.tagged_union.binding->bindings[0].tagged_union.svrname->name, 0), 0);
+		break;
+	      }
+	    hv_store(hv, "auth_info", 9, newRV((SV *)auth_info), 0);
+	    hv_store(hv, "binding", 7, newRV((SV *)binding), 0);
+	  }
+	  break;
+	    
+	case sec_attr_enc_trig_binding:
+	  status = sec_attr_not_implemented;
+	  break;
+	  
+	default:
+	  status = sec_attr_bad_type;
+	}
+    XPUSHs(newRV((SV*)hv));
+    XPUSHs_iv(status);
+  }
+
+int
+set_value(era, value)
+DCE::Registry::era era   
+SV *value
+
+  CODE:
+  {
+    SV **svp;
+    HV *hv = (HV*)SvRV(value);
+    error_status_t status = 0;
+
+    switch (era->attr.attr_value.attr_encoding)
+      {
+      case sec_attr_enc_any:
+	status = sec_attr_bad_param;
+	break;
+
+      case sec_attr_enc_void:
+	break;
+
+      case sec_attr_enc_integer:
+	svp = hv_true_fetch(hv, "integer", 7, 1);
+	if (svp)
+	  era->attr.attr_value.tagged_union.signed_int = SvIV(*svp);
+	else
+	  status = sec_attr_bad_param;
+	break;
+	
+      case sec_attr_enc_printstring:
+	svp = hv_true_fetch(hv, "printstring", 12, 1);
+	if (svp)
+	  {
+	    int len;
+	    char *printstring = SvPV(*svp, len);
+
+	    era->attr.attr_value.tagged_union.printstring = malloc(len+1);
+	    if (!era->attr.attr_value.tagged_union.printstring)
+	      {
+		status = sec_s_no_memory;
+		break;
+	      }
+	    strcpy(era->attr.attr_value.tagged_union.printstring, printstring);
+	  }
+	else
+	  status = sec_attr_bad_param;
+	break;
+	
+      case sec_attr_enc_printstring_array:
+	status = sec_attr_not_implemented;
+	break;
+	
+      case sec_attr_enc_bytes:
+      case sec_attr_enc_confidential_bytes:
+	svp = hv_true_fetch(hv, "bytes", 5, 1);
+	if (svp)
+	  {
+	    int len;
+	    char *data;
+
+	    data = SvPV(*svp, len);
+	    era->attr.attr_value.tagged_union.bytes = malloc(sizeof(sec_attr_enc_bytes_t)+len);
+	    if (!era->attr.attr_value.tagged_union.bytes)
+	      {
+		status = sec_s_no_memory;
+		break;
+	      }
+	    era->attr.attr_value.tagged_union.bytes->length = len;
+	    memcpy(era->attr.attr_value.tagged_union.bytes->data, data, len);
+	  }
+	else
+	  status = sec_attr_bad_param;
+	break;
+	
+      case sec_attr_enc_i18n_data:
+	svp = hv_true_fetch(hv, "codeset", 7, 1);
+	if (svp)
+	  {
+	    int codeset = SvIV(*svp);
+	    
+	    svp = hv_true_fetch(hv, "data", 4, 1);
+	    if (svp)
+	      {
+		int len;
+		char *data;
+
+		data = SvPV(*svp, len);
+		era->attr.attr_value.tagged_union.idata = malloc(sizeof(sec_attr_i18n_data_t)+len);
+		if (!era->attr.attr_value.tagged_union.idata)
+		  {
+		    status = sec_s_no_memory;
+		    break;
+		  }
+		era->attr.attr_value.tagged_union.idata->codeset = codeset;
+		era->attr.attr_value.tagged_union.idata->length = len;
+		memcpy(era->attr.attr_value.tagged_union.idata->data, data, len);
+	      }
+	    else
+	      status = sec_attr_bad_param;
+	  }
+	else
+	  status = sec_attr_bad_param;
+	break;
+	
+      case sec_attr_enc_uuid:
+	status = sec_attr_not_implemented;
+	break;
+	
+      case sec_attr_enc_attr_set:
+	status = sec_attr_not_implemented;
+	break;
+	
+      case sec_attr_enc_binding:
+      {
+	HV *auth_info;
+	HV *binding;
+	
+	status = sec_attr_bad_param;
+	
+	svp = hv_true_fetch(hv, "auth_info", 9, 1); if (!svp) break;
+	auth_info = (HV *)SvRV(*svp);
+	svp = hv_true_fetch(auth_info, "info_type", 9, 1); if (!svp) break;
+	
+	era->attr.attr_value.tagged_union.binding = (sec_attr_bind_info_t *)malloc(sizeof(sec_attr_bind_info_t));
+	if (!era->attr.attr_value.tagged_union.binding)
+	  {
+	    status = sec_s_no_memory;
+	    break;
+	  }
+	era->attr.attr_value.tagged_union.binding->auth_info.info_type = SvIV(*svp);
+	
+	if (era->attr.attr_value.tagged_union.binding->auth_info.info_type == sec_attr_bind_auth_dce)
+	  {
+	    int len;
+	    char *svr_princ_name;
+	    
+	    svp = hv_true_fetch(auth_info, "svr_princ_name", 14, 1); if (!svp) break;
+	    svr_princ_name = SvPV(*svp, len);
+	    era->attr.attr_value.tagged_union.binding->auth_info.tagged_union.dce_info.svr_princ_name = malloc(len+1);
+	    if (!era->attr.attr_value.tagged_union.binding->auth_info.tagged_union.dce_info.svr_princ_name)
+	      {
+		status = sec_s_no_memory;
+		break;
+	      }
+	    strcpy(era->attr.attr_value.tagged_union.binding->auth_info.tagged_union.dce_info.svr_princ_name, svr_princ_name);
+	    svp = hv_true_fetch(auth_info, "protect_level", 13, 1); if (!svp) break;
+	    era->attr.attr_value.tagged_union.binding->auth_info.tagged_union.dce_info.protect_level = SvIV(*svp);
+	    svp = hv_true_fetch(auth_info, "authn_svc", 9, 1); if (!svp) break;
+	    era->attr.attr_value.tagged_union.binding->auth_info.tagged_union.dce_info.authn_svc = SvIV(*svp);
+	    svp = hv_true_fetch(auth_info, "authz_svc", 9, 1); if (!svp) break;
+	    era->attr.attr_value.tagged_union.binding->auth_info.tagged_union.dce_info.authz_svc = SvIV(*svp);
+	  }
+	svp = hv_true_fetch(hv, "binding", 7, 1); if (!svp) break;
+	binding = (HV *)SvRV(*svp);
+	svp = hv_true_fetch(binding, "bind_type", 9, 1); if (!svp) break;
+	era->attr.attr_value.tagged_union.binding->bindings[0].bind_type = SvIV(*svp);
+	era->attr.attr_value.tagged_union.binding->num_bindings = 1;
+	if (era->attr.attr_value.tagged_union.binding->bindings[0].bind_type == sec_attr_bind_type_string)
+	  {
+	    int len;
+	    char *string_binding;
+	    
+	    svp = hv_true_fetch(binding, "string_binding", 14, 1); if (!svp) break;
+	    string_binding = SvPV(*svp, len);
+	    era->attr.attr_value.tagged_union.binding->bindings[0].tagged_union.string_binding = malloc(len+1);
+	    if (!era->attr.attr_value.tagged_union.binding->bindings[0].tagged_union.string_binding)
+	      {
+		status = sec_s_no_memory;
+		break;
+	      }
+	    strcpy(era->attr.attr_value.tagged_union.binding->bindings[0].tagged_union.string_binding, string_binding);
+    	  }
+	else if (era->attr.attr_value.tagged_union.binding->bindings[0].bind_type == sec_attr_bind_type_twrs)
+	  {
+	    status = sec_attr_not_implemented;
+	    break;
+	  }
+	else if (era->attr.attr_value.tagged_union.binding->bindings[0].bind_type == sec_attr_bind_type_svrname)
+	  {
+	    int len;
+	    char *svrname;
+	    
+	    svp = hv_true_fetch(binding, "svrname", 7, 1); if (!svp) break;
+	    era->attr.attr_value.tagged_union.binding->bindings[0].tagged_union.svrname = (sec_attr_bind_svrname *)malloc(sizeof(sec_attr_bind_svrname));
+	    if (!era->attr.attr_value.tagged_union.binding->bindings[0].tagged_union.svrname)
+	      {
+		status = sec_s_no_memory;
+		break;
+	      }
+	    era->attr.attr_value.tagged_union.binding->bindings[0].tagged_union.svrname->name_syntax = rpc_c_ns_syntax_default;
+	    svrname =  SvPV(*svp, len);
+	    era->attr.attr_value.tagged_union.binding->bindings[0].tagged_union.svrname->name = malloc(len+1);
+	    if (!era->attr.attr_value.tagged_union.binding->bindings[0].tagged_union.svrname->name)
+	      {
+		status = sec_s_no_memory;
+		break;
+	      }
+	    strcpy(era->attr.attr_value.tagged_union.binding->bindings[0].tagged_union.svrname->name, svrname);
+	  }
+	status = 0;
+	break;
+      }
+
+      case sec_attr_enc_trig_binding:
+	status = sec_attr_not_implemented;
+	break;
+
+      }
+
+    era->initialized = (status == 0);
+    RETVAL = status;
+  }
+  OUTPUT:
+  RETVAL
+
+int
+apply(era, rgy_context, name_domain, pgo_name)
+DCE::Registry::era era
+DCE::Registry rgy_context
+int name_domain
+char *pgo_name
+
+  CODE:
+  {
+    unsigned32 num_returned;
+    sec_attr_t out_attr;
+    unsigned32 num_left;
+    signed32 failure_index;
+    error_status_t status;
+
+    if (!era->initialized)
+      status = sec_attr_bad_param;
+    else
+      sec_rgy_attr_update(rgy_context, name_domain, pgo_name, 1, 0, &era->attr, &num_returned, &out_attr, &num_left, &failure_index, &status);
+    
+    RETVAL = status;
+  }
+  OUTPUT:
+  RETVAL
+	  
+int
+retrieve(era, rgy_context, name_domain, pgo_name)
+DCE::Registry::era era
+DCE::Registry rgy_context
+int name_domain
+char *pgo_name
+
+  CODE:
+  {
+    error_status_t status;
+    
+    sec_rgy_attr_lookup_by_name(rgy_context, name_domain, pgo_name, era->name, &era->attr, &status);
+    era->initialized = (status == 0);
+    RETVAL = status;
+  }
+  OUTPUT:
+  RETVAL
+	  
 MODULE = DCE::Registry		PACKAGE = DCE::login_name
 
 char *

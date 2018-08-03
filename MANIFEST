@@ -35,6 +35,14 @@ rgybase/Makefile.PL
 rgybase/rgybase.pm
 rgybase/rgybase.xs
 rgybase/test.pl
+attrbase/Makefile.PL
+attrbase/attrbase.pm
+attrbase/attrbase.xs
+attrbase/test.pl
+rpcbase/Makefile.PL
+rpcbase/rpcbase.pm
+rpcbase/rpcbase.xs
+rpcbase/test.pl
 t/README
 t/TEST
 t/acl/delete.t
