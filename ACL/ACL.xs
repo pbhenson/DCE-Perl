@@ -614,8 +614,10 @@ DCE::ACL::entry e
     /*
      * Discard the old, existing entries
      */
-    if (acl->num_entries > 0) 
+    /* Broken, broken, broken memory management
+       if (acl->num_entries > 0) 
 	safefree((void *) acl->sec_acl_entries);
+    */
 
     /* 
      * Add the new entry 
@@ -687,10 +689,12 @@ DCE::ACL acl
     /*
      * Perform request to delete entries 
      */
+    /* Broken, broken, broken memory management
     if (acl->num_entries > 0) {
-	free_existing_entry_keys(acl);
-	free((void *) acl->sec_acl_entries);
+        free_existing_entry_keys(acl);
+        free((void *) acl->sec_acl_entries);
     }
+    */
     acl->num_entries = 0;
 
     RETVAL = 0;

@@ -3,7 +3,7 @@ DCE::Registry		T_PTROBJ
 DCE::Registry::era	T_PTROBJ
 DCE::cursor		T_PTROBJ
 DCE::RegistryCursor	T_PTROBJ
-DCE::Login		T_PTROBJ
+DCE::Login::obj		T_PTROBJ
 DCE::UUID 		T_PTROBJ
 DCE::RPC		T_PTROBJ
 DCE::login_name		T_PTROBJ

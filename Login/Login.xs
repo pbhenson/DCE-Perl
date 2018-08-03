@@ -8,11 +8,12 @@
 
 /* $Id: Login.xs,v 1.11 1996/11/01 19:24:57 dougm Exp $ */ 
 
-#define BLESS_LOGIN_CONTEXT \
-   sv = sv_newmortal(); \
-   sv_setref_pv(sv,package,(void*)login_context); \
-   XPUSHs(sv); \
-   DCESTATUS
+typedef struct login_obj {
+  sec_login_handle_t	context;
+} login_obj;
+
+typedef login_obj *DCE__Login__obj;
+
 
 MODULE = DCE::Login		PACKAGE = DCE::Login		PREFIX = sec_login_
 
@@ -27,12 +28,26 @@ sec_login_setup_identity(package = "DCE::Login", principal, flags=sec_login_no_f
 
   PPCODE:
   {
-    sec_login_handle_t	login_context;
+    DCE__Login__obj	login;
     error_status_t	status;
     SV *sv;
 
-    sec_login_setup_identity(principal, flags, &login_context, &status);
-    BLESS_LOGIN_CONTEXT;
+    sv = &PL_sv_undef;
+
+    if (!(login = (DCE__Login__obj)malloc(sizeof(login_obj))))
+      status = sec_login_s_no_memory;
+    else {
+      sec_login_setup_identity(principal, flags, &login->context, &status);
+      if (status)
+	free(login);
+      else {
+	sv = sv_newmortal();
+	sv_setref_pv(sv,"DCE::Login::obj",(void*)login);
+      }
+    }
+    
+    XPUSHs(sv);
+    DCESTATUS;
   }
 
 void
@@ -41,17 +56,66 @@ sec_login_get_current_context(package = "DCE::Login")
 
   PPCODE:
   {
-    sec_login_handle_t login_context;
+    DCE__Login__obj	login;
     error_status_t	status;
     SV *sv;
 
-    sec_login_get_current_context(&login_context, &status);
-    BLESS_LOGIN_CONTEXT;
+    sv = &PL_sv_undef;
+
+    if (!(login = (DCE__Login__obj)malloc(sizeof(login_obj))))
+      status = sec_login_s_no_memory;
+    else {
+      sec_login_get_current_context(&login->context, &status);
+      if (status)
+	free(login);
+      else {
+	sv = sv_newmortal();
+	sv_setref_pv(sv,"DCE::Login::obj",(void*)login);
+      }
+    }
+
+   XPUSHs(sv); \
+   DCESTATUS
+
   }
 
+
 void
-sec_login_validate_identity(login_context, password)
-  DCE::Login	login_context
+sec_login_import_context(package = "DCE::Login", buf_len, buf)
+  char *package;
+  unsigned32	buf_len
+  char *	buf
+
+  PPCODE:
+  {
+    DCE__Login__obj login;
+    error_status_t	status;
+    SV *sv;
+
+    sv = &PL_sv_undef;
+
+    if (!(login = (DCE__Login__obj)malloc(sizeof(login_obj))))
+      status = sec_login_s_no_memory;
+    else {
+      sec_login_import_context(buf_len, buf, &login->context, &status);
+      
+      if (status)
+	free(login);
+      else {
+	sv = sv_newmortal();
+	sv_setref_pv(sv,"DCE::Login::obj",(void*)login);
+      }
+    }
+    
+    XPUSHs(sv);
+    DCESTATUS;
+  }
+
+MODULE = DCE::Login		PACKAGE = DCE::Login::obj		PREFIX = sec_login_
+
+void
+sec_login_validate_identity(login, password)
+  DCE::Login::obj	login
   char *	password  
 
   PPCODE:
@@ -67,7 +131,7 @@ sec_login_validate_identity(login_context, password)
     passwd.pepper = NULL;
     passwd.version_number = sec_passwd_c_version_none;
                         
-    retval = sec_login_validate_identity(login_context, &passwd, 
+    retval = sec_login_validate_identity(login->context, &passwd, 
 					 &reset_passwd, &auth_src, &status);
     if(GIMME == G_ARRAY) {
 	EXTEND(sp,3);
@@ -79,22 +143,22 @@ sec_login_validate_identity(login_context, password)
   }    
 
 void
-sec_login_certify_identity(login_context)
-  DCE::Login	login_context
+sec_login_certify_identity(login)
+  DCE::Login::obj	login
 
   PPCODE:
   {
     error_status_t	status;
     boolean32 retval;
-    retval = sec_login_certify_identity(login_context, &status);
+    retval = sec_login_certify_identity(login->context, &status);
     if(GIMME == G_ARRAY)
 	XPUSHs_iv(retval);
     DCESTATUS;
   }
 
 void
-sec_login_valid_and_cert_ident(login_context, password)
-  DCE::Login	login_context
+sec_login_valid_and_cert_ident(login, password)
+  DCE::Login::obj	login
   char *password  
 
   PPCODE:
@@ -114,7 +178,7 @@ sec_login_valid_and_cert_ident(login_context, password)
     passwd.pepper = NULL;
     passwd.version_number = sec_passwd_c_version_none;
             
-    retval = sec_login_valid_and_cert_ident(login_context, &passwd, &reset_passwd, &auth_src, &status);
+    retval = sec_login_valid_and_cert_ident(login->context, &passwd, &reset_passwd, &auth_src, &status);
     if(GIMME == G_ARRAY) {
 	EXTEND(sp,3);
 	PUSHs_iv(retval);
@@ -125,8 +189,8 @@ sec_login_valid_and_cert_ident(login_context, password)
   }    
 
 void
-sec_login_valid_from_keytable(login_context, keyfile = "")
-  DCE::Login	login_context
+sec_login_valid_from_keytable(login, keyfile = "")
+  DCE::Login::obj	login
   char *keyfile
 
     CODE:
@@ -136,7 +200,7 @@ sec_login_valid_from_keytable(login_context, keyfile = "")
     sec_login_auth_src_t	auth_src;
     error_status_t	status;
 
-    sec_login_valid_from_keytable(login_context, asvc, keyfile, 0, &kvno,
+    sec_login_valid_from_keytable(login->context, asvc, keyfile, 0, &kvno,
 				  &reset_passwd, &auth_src, &status);
     EXTEND(sp,2);
     PUSHs_iv(reset_passwd);
@@ -145,94 +209,80 @@ sec_login_valid_from_keytable(login_context, keyfile = "")
   }
 
 void
-sec_login_set_context(login_context)
-  DCE::Login	login_context
+sec_login_set_context(login)
+  DCE::Login::obj	login
 
   PPCODE:
   {
     error_status_t	status;
-    sec_login_set_context(login_context, &status);
+    sec_login_set_context(login->context, &status);
     DCESTATUS;
   }
 
 void
-sec_login_purge_context(login_context)
-  DCE::Login	login_context
+sec_login_purge_context(login)
+  DCE::Login::obj	login
 
   PPCODE:
   {
     error_status_t	status;
-    sec_login_purge_context(&login_context, &status);
-    sv_setref_pv(ST(0), "DCE::Login", (void*)login_context);
+    sec_login_purge_context(&(login->context), &status);
     DCESTATUS;
   }
 
 void
-sec_login_release_context(login_context)
-  DCE::Login	login_context
+sec_login_release_context(login)
+  DCE::Login::obj	login
 
   PPCODE:
   {
     error_status_t	status;
-    sec_login_release_context(&login_context, &status);
-    sv_setref_pv(ST(0), "DCE::Login", (void*)login_context);
+    sec_login_release_context(&login->context, &status);
     DCESTATUS;
   }
 
 void
-sec_login_DESTROY(login_context)
-  DCE::Login	login_context
+sec_login_DESTROY(login)
+  DCE::Login::obj	login
 
   PPCODE:
   {
-    error_status_t	status;
-    sec_login_release_context(&login_context, &status);
+    if (login) {
+      if (login->context) {
+	error_status_t	status;
+	sec_login_release_context(&login->context, &status);
+      }
+      free(login);
+    }
   }
 
 void
-sec_login_get_expiration(login_context)
-  DCE::Login	login_context
+sec_login_get_expiration(login)
+  DCE::Login::obj	login
 
   PPCODE:
   {
     signed32	identity_expiration;
     error_status_t	status;
-    sec_login_get_expiration(login_context, &identity_expiration, &status);
+    sec_login_get_expiration(login->context, &identity_expiration, &status);
     XPUSHs_iv(identity_expiration);
     DCESTATUS;
   }
 
 void
-sec_login_refresh_identity(login_context)
-  DCE::Login	login_context
+sec_login_refresh_identity(login)
+  DCE::Login::obj	login
 
   PPCODE:
   {
     error_status_t	status;
-    sec_login_refresh_identity(login_context, &status);
+    sec_login_refresh_identity(login->context, &status);
     DCESTATUS;
   }
 
 void
-sec_login_import_context(package = "DCE::Login", buf_len, buf)
-  char *package;
-  unsigned32	buf_len
-  char *	buf
-
-  PPCODE:
-  {
-  sec_login_handle_t	login_context;
-  error_status_t	status;
-  SV *sv;
-
-  sec_login_import_context(buf_len, buf, &login_context, &status);
-
-  BLESS_LOGIN_CONTEXT;
-  }
-
-void
-sec_login_export_context(login_context, buf_len)
-  DCE::Login	login_context
+sec_login_export_context(login, buf_len)
+  DCE::Login::obj	login
   unsigned32	buf_len
 
   PPCODE:
@@ -243,7 +293,7 @@ sec_login_export_context(login_context, buf_len)
     error_status_t	status;
   
     buf = malloc(buf_len);
-    sec_login_export_context(login_context, buf_len, buf, &len_used, &len_needed, &status);
+    sec_login_export_context(login->context, buf_len, buf, &len_used, &len_needed, &status);
 
     EXTEND(sp, 3);
     PUSHs_pv(buf); 
@@ -254,8 +304,8 @@ sec_login_export_context(login_context, buf_len)
   }
 
 void
-sec_login_get_pwent(login_context)
-  DCE::Login 	login_context
+sec_login_get_pwent(login)
+  DCE::Login::obj 	login
 
   PPCODE:
   {
@@ -263,7 +313,7 @@ sec_login_get_pwent(login_context)
     error_status_t 	status;
     HV *hv;
 
-    sec_login_get_pwent(login_context, (sec_login_passwd_t *)&pwd, &status);
+    sec_login_get_pwent(login->context, (sec_login_passwd_t *)&pwd, &status);
 
     iniHV;
     hv_store(hv, "name", 4, newSVpv(pwd->pw_name,0),0);

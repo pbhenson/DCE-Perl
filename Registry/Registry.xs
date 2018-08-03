@@ -618,6 +618,7 @@ sec_rgy_create_cursor(rgy_context, cursor)
   {
     sec_rgy_cursor_t *rgy_cursor;
     rgy_cursor = malloc(sizeof(sec_rgy_cursor_t));
+    sec_rgy_cursor_reset(rgy_cursor);
     sv_setref_pv((SV*)cursor, "DCE::RegistryCursor", (void *)rgy_cursor);
   }
 
@@ -629,6 +630,7 @@ sec_rgy_cursor(rgy_context)
   {
     sec_rgy_cursor_t *rgy_cursor;
     rgy_cursor = malloc(sizeof(sec_rgy_cursor_t));
+    sec_rgy_cursor_reset(rgy_cursor);
     RETVAL = rgy_cursor;
   }
 
