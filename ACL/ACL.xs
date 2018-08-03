@@ -479,6 +479,24 @@ boolean32 bind_to_entry
     BLESS_ACL_HANDLE;
     }
 
+void
+sec_acl_bind_to_addr(package, site_addr, component_name)
+char *package
+unsigned char *site_addr
+unsigned char *component_name
+
+    PPCODE:
+    {
+    sec_acl_handle_t  handle;
+    error_status_t status;
+    SV *sv;
+    package = "DCE::ACL::handle"; 
+
+    sec_acl_bind_to_addr(site_addr, component_name, &handle, &status);
+    CHK_STS(1);
+    BLESS_ACL_HANDLE;
+    }
+
 unsigned32
 num_entries(acl)
 DCE::ACL acl
