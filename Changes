@@ -1,4 +1,19 @@
 
+=item 0.16 - 03/10/98
+
+Paul Henson <henson@acm.org> takes over maintenance of DCE-Perl from Doug
+MacEachern, who is off in consultant-land earning lots of beer.
+
+
+Added new method to Registry class to obtain default registry handle:
+
+     ($rgy, $status) = DCE::Registry->site_default();
+
+
+Added patch from Joel Murphy <jmurphy@cnu.acsu.buffalo.edu> to fix
+gcc-ism of declaring variable size arrays on the stack.
+
+
 =item 0.15 - 06/22/97
 
 applied patches from Paul Whaley <whaley@ucs.ubc.ca> for solaris sanity

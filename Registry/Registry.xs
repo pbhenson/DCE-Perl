@@ -135,8 +135,24 @@ sec_rgy_DESTROY(rgy_context)
     
   PPCODE:
   {
-    error_status_t	status;
-    sec_rgy_site_close(rgy_context, &status);
+    error_status_t	status = error_status_ok;
+    if (rgy_context != sec_rgy_default_handle)
+      sec_rgy_site_close(rgy_context, &status);
+    DCESTATUS;
+  }
+
+void
+sec_rgy_site_default(package="DCE::Registry")
+  char * package;
+  
+  PPCODE:
+  {
+    sec_rgy_handle_t rgy_context = sec_rgy_default_handle;
+    error_status_t status = error_status_ok;
+
+    SV *sv = sv_newmortal();
+    sv_setref_iv(sv,package,(int)rgy_context);
+    XPUSHs(sv);
     DCESTATUS;
   }
 

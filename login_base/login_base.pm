@@ -56,7 +56,7 @@ DCE::login_base - Constants from sec_login_*.h
 =head1 DESCRIPTION
 
 These constant methods are inherited by DCE::Login, a developer should not 
-need to use this module and it's methods directly.
+need to use this module and its methods directly.
 
 =head1 AUTHOR
 

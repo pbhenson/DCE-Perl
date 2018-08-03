@@ -56,7 +56,7 @@ DCE::rgybase - Constants from dce/rgybase.h
 =head1 DESCRIPTION
 
 These constant methods are inherited by DCE::Registry, a developer should not 
-need to use this module and it's methods directly.
+need to use this module and its methods directly.
 
 Here is a list of the available constants:
 

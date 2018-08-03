@@ -185,12 +185,13 @@ unsigned32 size_avail
     PPCODE: 
     {  
     unsigned32 size_used, num_types;
-    uuid_t manager_types[size_avail];
+    uuid_t *manager_types = malloc(sizeof(uuid_t) * size_avail);
     error_status_t status;
     SV *uuid_sv;
     AV *av;
     int i;
 
+    if (! manager_types) croak("malloc");
     sec_acl_get_manager_types(handle, sec_acl_type, size_avail, 
 			      &size_used, &num_types, manager_types, &status);
     CHK_STS(3);
@@ -209,6 +210,7 @@ unsigned32 size_avail
     }
     else 
 	XPUSHs(newRV((SV*)av));
+    free(manager_types);
     }
 
 void
@@ -240,13 +242,14 @@ unsigned32 printstring_len
       sec_acl_printstring_t manager_info;
       boolean32 tokenize;
       unsigned32 total_num_printstrings, num_printstrings;
-      sec_acl_printstring_t printstrings[printstring_len];
+      sec_acl_printstring_t *printstrings = malloc(printstring_len*sizeof(sec_acl_printstring_t));
       error_status_t status;
       HV *hv, *info_hv;
       AV *av;
       SV *uuid_sv, *info;
       int i;
 
+      if (! printstrings) croak("malloc");
       SNAG_FIRST_MANAGER(handle, manager_type, sec_acl_type_object, mgr_sv);
 
       sec_acl_get_printstring(handle, &manager_type, printstring_len,
@@ -286,7 +289,8 @@ unsigned32 printstring_len
 	  DCESTATUS;
       }
       else	  
-	  XPUSHs(newRV((SV*)av)); 
+	  XPUSHs(newRV((SV*)av));
+      free(printstrings);
       }	  
 
 void
