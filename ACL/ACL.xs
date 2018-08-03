@@ -37,7 +37,7 @@ if(!SvTRUE(mgr_sv)) { \
     error_status_t status; \
     sec_acl_get_manager_types(h, type, 1, &size_used, &num_types, manager_types, &status); \
     mgr = manager_types[0]; \
-    if(mgr_sv != &sv_undef) \
+    if(mgr_sv != &PL_sv_undef) \
        __bless_uuid(mgr, mgr_sv); \
 } \
 else { \
@@ -231,7 +231,7 @@ DCE::ACL::list l
     }
 
 void
-sec_acl_get_printstring(handle, mgr_sv=&sv_undef, printstring_len=32)
+sec_acl_get_printstring(handle, mgr_sv=&PL_sv_undef, printstring_len=32)
 DCE::ACL::handle handle
 SV *mgr_sv
 unsigned32 printstring_len
@@ -773,7 +773,7 @@ char *key
     else if(strEQ(key, "helpstring"))
         RETVAL = newSVpv(p->helpstring, 0);
     else
-        RETVAL = &sv_undef;
+        RETVAL = &PL_sv_undef;
 
     OUTPUT:
     RETVAL

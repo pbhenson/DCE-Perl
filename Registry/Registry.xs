@@ -34,7 +34,7 @@ typedef era_obj_t *DCE__Registry__era;
   }
 
 #define BLESS_RGY_CONTEXT \
-  sv = &sv_undef; \
+  sv = &PL_sv_undef; \
   if (status == 0) { \
     sv = sv_newmortal(); \
     sv_setref_pv(sv,package,(void*)rgy_context); \
@@ -99,7 +99,7 @@ typedef era_obj_t *DCE__Registry__era;
     svp = hv_true_fetch(info, "flags", 5, 1); \
     if(svp) pgo_item.flags = (sec_rgy_pgo_flags_t )SvIV(*svp); \
     svp = hv_true_fetch(info, "fullname", 8, 1); \
-    if(svp) strncpy(pgo_item.fullname, (char *)SvPV(*svp,na), 256); \
+    if(svp) strncpy(pgo_item.fullname, (char *)SvPV(*svp,PL_na), 256); \
     svp = hv_true_fetch(info, "id", 2, 1); \
     if(svp) UUIDmagic_sv(pgo_item.id, *svp); \
   }
@@ -166,7 +166,7 @@ sec_rgy_site_default(package="DCE::Registry")
   }
 
 void
-sec_rgy_site_bind(package="DCE::Registry",site_name="",hash_ref=&sv_undef)
+sec_rgy_site_bind(package="DCE::Registry",site_name="",hash_ref=&PL_sv_undef)
   char *	package
   char *	site_name
   SV *	hash_ref
@@ -187,7 +187,7 @@ sec_rgy_site_bind(package="DCE::Registry",site_name="",hash_ref=&sv_undef)
   }
 
 void
-sec_rgy_cell_bind(package="DCE::Registry",cell_name="",hash_ref=&sv_undef)
+sec_rgy_cell_bind(package="DCE::Registry",cell_name="",hash_ref=&PL_sv_undef)
   char *	package
   char *	cell_name
   SV *	hash_ref
@@ -209,7 +209,7 @@ sec_rgy_cell_bind(package="DCE::Registry",cell_name="",hash_ref=&sv_undef)
 
 
 void
-sec_rgy_site_bind_query(package="DCE::Registry",site_name="",hash_ref=&sv_undef)
+sec_rgy_site_bind_query(package="DCE::Registry",site_name="",hash_ref=&PL_sv_undef)
   char *	package
   char *	site_name
   SV *	hash_ref
@@ -230,7 +230,7 @@ sec_rgy_site_bind_query(package="DCE::Registry",site_name="",hash_ref=&sv_undef)
   }
 
 void
-sec_rgy_site_bind_update(package="DCE::Registry",site_name="",hash_ref=&sv_undef)
+sec_rgy_site_bind_update(package="DCE::Registry",site_name="",hash_ref=&PL_sv_undef)
   char *	package
   char *	site_name
   SV *	hash_ref
@@ -811,7 +811,7 @@ sec_rgy_pgo_get_members(rgy_context, domain, name, member_cursor, max_members = 
     if(status == sec_rgy_no_more_entries)
 
     if((status != 0) && (status != sec_rgy_no_more_entries)) { 
-      ST(0) = &sv_undef;
+      ST(0) = &PL_sv_undef;
       free(member_list);
       PUTBACK;
       return;
@@ -1276,7 +1276,7 @@ era(rgy_context, era_name)
 
   PPCODE:
      {
-       SV *sv = &sv_undef;
+       SV *sv = &PL_sv_undef;
        DCE__Registry__era era;
        sec_attr_schema_entry_t era_schema;
        error_status_t status;

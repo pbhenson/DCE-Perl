@@ -46,7 +46,7 @@ extern "C" {
    int i; \
    if(status > 0) { \
 	for(i=0; i<n; i++) \
-	  XPUSHs(&sv_undef); \
+	  XPUSHs(&PL_sv_undef); \
         DCESTATUS; \
 	PUTBACK; \
 	return; \
@@ -134,7 +134,7 @@ typedef uuid_t             * DCE__UUID;
     else { \
        error_status_t  str_status; \
        uuid = (uuid_t *)safemalloc(sizeof(uuid_t)); \
-       uuid_from_string((unsigned_char_t *)SvPV(sv,na), uuid, &str_status); \
+       uuid_from_string((unsigned_char_t *)SvPV(sv,PL_na), uuid, &str_status); \
     } \
 }
 
@@ -167,7 +167,7 @@ typedef uuid_t             * DCE__UUID;
       UUIDmagic_sv(sec_id.uuid, *svp); \
     svp = hv_fetch(set_id, "name", 4, 0); \
     if(SvTRUE(*svp)) \
-    sec_id.name = SvPV(*svp,na); \
+    sec_id.name = SvPV(*svp,PL_na); \
 }
 
 #define FETCH_FOREIGN_ID(f_id,hv) \
