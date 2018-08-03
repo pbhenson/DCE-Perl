@@ -22,8 +22,8 @@ my $def_dce_libs = '-L/usr/include/dce -ldce';
 
 my $mm_dce = {
     hpux => {LIBS => [$def_dce_libs, "-lc_r"]},
-    solaris => {LIBS => [qw(-ldce -lnsl -lthread -lm)],
-		DEFINE => '-D_REENTRANT'}
+    solaris => {LIBS => [qw(-ldce)],
+		DEFINE => '-I/usr/include/dce -D_REENTRANT'}
 };
   
 # Provide a default LIBS for other systems.
@@ -37,7 +37,7 @@ WriteMakefile (
   TYPEMAPS => [$typemap],
   XSPROTOARG	=> '-noprototypes',
   NAME => 'DCE-Perl',
-  VERSION => '0.17',
+  VERSION => '0.18',
   'dist'    => {
       COMPRESS=> 'gzip -9f', SUFFIX=>'gz', 
       POSTOP => 'mv $(DISTNAME)-$(VERSION).tar.gz ../',
